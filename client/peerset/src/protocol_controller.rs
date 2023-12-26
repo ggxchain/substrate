@@ -43,7 +43,7 @@
 
 use futures::{channel::oneshot, future::Either, FutureExt, StreamExt};
 use libp2p_identity::PeerId;
-use log::{error, trace, warn};
+use log::{debug, error, trace, warn};
 use sc_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnboundedSender};
 use sp_arithmetic::traits::SaturatedConversion;
 use std::{
@@ -507,7 +507,7 @@ impl ProtocolController {
 	fn on_disconnect_peer(&mut self, peer_id: PeerId) {
 		// Don't do anything if the node is reserved.
 		if self.reserved_nodes.contains_key(&peer_id) {
-			warn!(
+			debug!(
 				target: LOG_TARGET,
 				"Ignoring request to disconnect reserved peer {} from {:?}.", peer_id, self.set_id,
 			);
@@ -524,7 +524,7 @@ impl ProtocolController {
 				self.drop_connection(peer_id);
 			},
 			None => {
-				warn!(
+				debug!(
 					target: LOG_TARGET,
 					"Trying to disconnect unknown peer {} from {:?}.", peer_id, self.set_id,
 				);
@@ -633,9 +633,7 @@ impl ProtocolController {
 	/// disconnected, `Ok(false)` if it wasn't found, `Err(PeerId)`, if the peer found, but not in
 	/// connected state.
 	fn drop_reserved_peer(&mut self, peer_id: &PeerId) -> Result<bool, PeerId> {
-		let Some(state) = self.reserved_nodes.get_mut(peer_id) else {
-			return Ok(false)
-		};
+		let Some(state) = self.reserved_nodes.get_mut(peer_id) else { return Ok(false) };
 
 		if let PeerState::Connected(direction) = state {
 			trace!(target: LOG_TARGET, "Reserved peer {peer_id} ({direction:?}) dropped.");
@@ -649,9 +647,7 @@ impl ProtocolController {
 	/// Try dropping the peer as a regular peer. Return `true` if the peer was found and
 	/// disconnected, `false` if it wasn't found.
 	fn drop_regular_peer(&mut self, peer_id: &PeerId) -> bool {
-		let Some(direction) = self.nodes.remove(peer_id) else {
-			return false
-		};
+		let Some(direction) = self.nodes.remove(peer_id) else { return false };
 
 		trace!(target: LOG_TARGET, "Peer {peer_id} ({direction:?}) dropped.");
 
